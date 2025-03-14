@@ -2,7 +2,7 @@ import os
 import subprocess
 import shutil
 import sys
-import pandas as pd
+import polars as pl
 import re
 
 def main():
@@ -22,7 +22,7 @@ def main():
     # Define missingness percentages to test
     percentages = [1, 2, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90]
     
-    # Initialize results dataframe
+    # Initialize results list
     results = []
     
     # Process each percentage
@@ -95,10 +95,10 @@ def main():
         # Add the row data to our results
         results.append(row_data)
     
-    # Create and save the stats DataFrame
-    stats_df = pd.DataFrame(results)
+    # Create and save the stats DataFrame with polars
+    stats_df = pl.DataFrame(results)
     stats_file = os.path.join(output_dir, "downsampling_stats.csv")
-    stats_df.to_csv(stats_file, index=False)
+    stats_df.write_csv(stats_file)
     print(f"\nStatistics saved to {stats_file}")
     
     # Also display the table
