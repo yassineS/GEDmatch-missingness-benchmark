@@ -1,0 +1,25 @@
+PLINK v1.90b5 64-bit (14 Nov 2017)
+Options in effect:
+  --bfile ustishim/2014_FuNature-2.1.1/2014_FuNature
+  --extract 1240k_23andme_shared.txt
+  --out 2014_FuNature_ustishim_23andme
+  --recode 23
+
+Hostname: Minerva.local
+Working directory: ./gedmatch_missingness_benchmark/data
+Start time: Fri Mar 14 16:36:32 2025
+
+Random number seed: 1741932392
+16384 MB RAM detected; reserving 8192 MB for main workspace.
+1233013 variants loaded from .bim file.
+1 person (1 male, 0 females) loaded from .fam.
+--extract: 449104 variants remaining.
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 1 founder and 0 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate is 0.996627.
+449104 variants and 1 person pass filters and QC.
+Note: No phenotypes present.
+--recode 23 to 2014_FuNature_ustishim_23andme.txt ... done.
+
+End time: Fri Mar 14 16:36:34 2025
