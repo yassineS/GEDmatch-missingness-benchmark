@@ -1,0 +1,12 @@
+[project]
+authors = ["yassineS <1767457+yassineS@users.noreply.github.com>"]
+channels = ["conda-forge", "bioconda"]
+description = "Add a short description here"
+name = "gedmatch_missigness_benchmark"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+polars = ">=1.24.0,<2"
