@@ -1,3 +1,8 @@
+"""
+This module runs downsampling on the ustishim 23andme data at various percentages.
+It creates both diploid and pseudo-haploid versions of the downsampled data
+and collects statistics about the results.
+"""
 import os
 import re
 import subprocess
