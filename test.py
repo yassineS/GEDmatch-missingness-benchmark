@@ -249,7 +249,9 @@ rs202\t2\t2500\t--
                 with patch('os.path.splitext', return_value=(base_name, '.txt')):
                     downsample.main()
                     # Updated assert to match the actual print message format from downsample.py
-                    mock_print.assert_any_call(f"Pseudo-haploid file written to {base_name}_pseudohaploid.txt")
+                    mock_print.assert_any_call(
+                        f"Pseudo-haploid file written to {base_name}_pseudohaploid.txt"
+                    )
 
         # Clean up the temp file if it exists
         if os.path.exists(f"{base_name}_pseudohaploid.txt"):
