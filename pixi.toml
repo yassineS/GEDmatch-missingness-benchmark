@@ -10,3 +10,4 @@ version = "0.1.0"
 
 [dependencies]
 polars = ">=1.24.0,<2"
+pylint = ">=3.3.6,<4"
