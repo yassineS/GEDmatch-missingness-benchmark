@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 downsample.py
-This script processes a 23andme file, allowing for downsampling of loci 
+This script processes a 23andme file, allowing for downsampling of loci
 and pseudo-haploidization of genotypes.
 It can also calculate and display statistics about the data.
 Usage instructions:
