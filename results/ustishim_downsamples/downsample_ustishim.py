@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 This module runs downsampling on the ustishim 23andme data at various percentages.
 It creates both diploid and pseudo-haploid versions of the downsampled data
@@ -9,6 +11,51 @@ import subprocess
 import shutil
 import sys
 import polars as pl
+
+def run_downsampling(input_file, script_path, pct, pseudo_haploid=False):
+    """Run the downsampling command with the specified parameters."""
+    cmd = [
+        "python", script_path,
+        "-i", input_file,
+        "-p", str(pct),
+        "-s"  # Include stats
+    ]
+
+    if pseudo_haploid:
+        cmd.append("-a")  # Enable pseudo-haploid mode
+        mode_name = "pseudo-haploid"
+    else:
+        mode_name = "diploid"
+
+    try:
+        process = subprocess.run(
+            cmd, check=True, text=True, capture_output=True
+        )
+        print(f"{mode_name.capitalize()} processing complete.")
+
+        # Parse stats from output
+        section_name = "Pseudo-haploid stats" if pseudo_haploid else "Downsampled stats"
+        total_loci, missing_loci = extract_stats(process.stdout, section_name)
+
+        # Create result dictionary
+        result = {
+            f'{mode_name.capitalize()} Total Loci': total_loci,
+            f'{mode_name.capitalize()} Remaining Loci': total_loci - missing_loci,
+            f'{mode_name.capitalize()} Missing Loci': missing_loci,
+            f'{mode_name.capitalize()} Actual Missingness %': (missing_loci * 100 / total_loci
+                                                                if total_loci > 0 else 0)
+        }
+
+        # Handle file copying
+        handle_output_files(process.stdout, "./")
+
+        return result
+    except subprocess.CalledProcessError as e:
+        print(f"Error running {mode_name} downsampling with {pct}% missingness:")
+        print(f"Command: {' '.join(cmd)}")
+        print(f"Error: {e}")
+        print(f"STDERR: {e.stderr}")
+        return {}
 
 def main():
     """Main function to run downsampling and collect statistics."""
@@ -39,72 +86,13 @@ def main():
 
         row_data = {'Missingness %': pct}
 
-        # First run: downsampling only (diploid)
-        cmd_diploid = [
-            "python", script_path,
-            "-i", input_file,
-            "-p", str(pct),
-            "-s"  # Include stats
-        ]
+        # Run diploid downsampling
+        diploid_results = run_downsampling(input_file, script_path, pct)
+        row_data.update(diploid_results)
 
-        # Run the diploid command
-        try:
-            process_diploid = subprocess.run(
-                cmd_diploid, check=True, text=True, capture_output=True
-                )
-            print("Diploid processing complete.")
-
-            # Parse stats from output
-            total_loci, missing_loci = extract_stats(process_diploid.stdout, "Downsampled stats")
-            row_data['Diploid Total Loci'] = total_loci
-            row_data['Diploid Remaining Loci'] = total_loci - missing_loci
-            row_data['Diploid Missing Loci'] = missing_loci
-            row_data['Diploid Actual Missingness %'] = (missing_loci * 100 / total_loci
-														 if total_loci > 0 else 0)
-
-            # Handle file copying for diploid
-            handle_output_files(process_diploid.stdout, output_dir)
-
-        except subprocess.CalledProcessError as e:
-            print(f"Error running diploid downsampling with {pct}% missingness:")
-            print(f"Command: {' '.join(cmd_diploid)}")
-            print(f"Error: {e}")
-            print(f"STDERR: {e.stderr}")
-
-        # Second run: downsampling + pseudo-haploid
-        cmd_pseudohap = [
-            "python", script_path,
-            "-i", input_file,
-            "-p", str(pct),
-            "-a",  # Enable pseudo-haploid mode
-            "-s"   # Include stats
-        ]
-
-        # Run the pseudo-haploid command
-        try:
-            process_pseudohap = subprocess.run(
-                cmd_pseudohap, check=True, text=True, capture_output=True
-                )
-            print("Pseudo-haploid processing complete.")
-
-            # Parse stats from output
-            total_loci, missing_loci = extract_stats(
-                process_pseudohap.stdout, "Pseudo-haploid stats"
-                )
-            row_data['PseudoHaploid Total Loci'] = total_loci
-            row_data['PseudoHaploid Remaining Loci'] = total_loci - missing_loci
-            row_data['PseudoHaploid Missing Loci'] = missing_loci
-            row_data['PseudoHaploid Actual Missingness %'] = ((missing_loci / total_loci * 100)
-                                                            if total_loci > 0 else 0)
-
-            # Handle file copying for pseudo-haploid
-            handle_output_files(process_pseudohap.stdout, output_dir)
-
-        except subprocess.CalledProcessError as e:
-            print(f"Error running pseudo-haploid downsampling with {pct}% missingness:")
-            print(f"Command: {' '.join(cmd_pseudohap)}")
-            print(f"Error: {e}")
-            print(f"STDERR: {e.stderr}")
+        # Run pseudo-haploid downsampling
+        pseudohap_results = run_downsampling(input_file, script_path, pct, pseudo_haploid=True)
+        row_data.update(pseudohap_results)
 
         # Add the row data to our results
         results.append(row_data)
