@@ -110,17 +110,17 @@ rs202\t2\t2500\t--
                 pseudo_df.filter(pl.col("rsid") == "rs1")["genotype"][0], "AA"
                 )  # first allele
             self.assertEqual(
-				pseudo_df.filter(pl.col("rsid") == "rs2")["genotype"][0], "TT"
-			    )  # homozygous already
+                pseudo_df.filter(pl.col("rsid") == "rs2")["genotype"][0], "TT"
+                )  # homozygous already
             self.assertEqual(
-				pseudo_df.filter(pl.col("rsid") == "rs3")["genotype"][0], "CC"
-			    )  # homozygous already
+                pseudo_df.filter(pl.col("rsid") == "rs3")["genotype"][0], "CC"
+                )  # homozygous already
             self.assertEqual(
-				pseudo_df.filter(pl.col("rsid") == "rs4")["genotype"][0], "CC"
-			    )  # second allele
+                pseudo_df.filter(pl.col("rsid") == "rs4")["genotype"][0], "CC"
+                )  # second allele
             self.assertEqual(
-				pseudo_df.filter(pl.col("rsid") == "rs5")["genotype"][0], "--"
-			    )  # missing remains missing
+                pseudo_df.filter(pl.col("rsid") == "rs5")["genotype"][0], "--"
+                )  # missing remains missing
 
     def test_write_with_headers(self):
         """Test writing output with headers."""
