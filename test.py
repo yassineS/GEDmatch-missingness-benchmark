@@ -4,6 +4,7 @@ import tempfile
 from unittest.mock import patch
 import polars as pl
 import downsample
+from downsample import extract_headers
 
 
 class TestDownsample(unittest.TestCase):
@@ -33,18 +34,8 @@ rs202\t2\t2500\t--
 
     def test_read_csv(self):
         """Test reading a genetic data file."""
-        # Extract headers first
-        headers = []
-        column_names = None
-        with open(self.test_file, 'r', encoding='utf-8') as f:
-            for line in f:
-                if line.startswith('#'):
-                    headers.append(line)
-                    if '# rsid' in line:
-                        # Extract column names from this specific header line
-                        column_names = line.strip('# \n').split('\t')
-                else:
-                    break
+        # Extract headers and column names using the extract_headers function
+        headers, column_names = extract_headers(self.test_file)
 
         df = pl.read_csv(
             self.test_file,
@@ -220,8 +211,7 @@ rs202\t2\t2500\t--
                 with patch('os.path.splitext', return_value=(base_name, '.txt')):
                     try:
                         downsample.main()
-                        mock_print.assert_any_call(f"Downsampled file written to \
-                                                   {base_name}_downsampled_50pct.txt")
+                        mock_print.assert_any_call(f"Downsampled file written to {base_name}_downsampled_50pct.txt")
                     except Exception as e:
                         self.fail(f"main() raised exception unexpectedly: {e}")
 
