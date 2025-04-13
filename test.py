@@ -31,10 +31,9 @@ rs789\t1\t3000\tTT
 rs101\t2\t1500\tAG
 rs202\t2\t2500\t--
 """
-        self.temp_file = tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.txt')
-        self.temp_file.write(self.test_data)
-        self.temp_file.close()
-        self.test_file = self.temp_file.name
+        with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix='.txt') as self.temp_file:
+            self.temp_file.write(self.test_data)
+            self.test_file = self.temp_file.name
 
     def tearDown(self):
         """Clean up after each test method."""
@@ -135,7 +134,9 @@ rs202\t2\t2500\t--
         })
 
         headers = ["# Header line 1\n", "# rsid\tchromosome\tposition\tgenotype\n"]
-        output_file = tempfile.NamedTemporaryFile(delete=False).name
+        
+        with tempfile.NamedTemporaryFile(delete=False) as temp_output_file:
+            output_file = temp_output_file.name
 
         try:
             downsample.write_with_headers(headers, output_file, df, "Test processing")
@@ -201,8 +202,9 @@ rs202\t2\t2500\t--
     def test_main_with_downsampling(self):
         """Test main function with downsampling."""
         # Create a temp file for output
-        output_file = tempfile.NamedTemporaryFile(delete=False).name
-        base_name = os.path.splitext(output_file)[0]
+        with tempfile.NamedTemporaryFile(delete=False) as temp_output_file:
+            output_file = temp_output_file.name
+            base_name = os.path.splitext(output_file)[0]
 
         # Mock the argument parser
         with patch('argparse.ArgumentParser.parse_args') as mock_args:

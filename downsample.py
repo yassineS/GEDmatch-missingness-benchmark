@@ -63,8 +63,7 @@ def main():
             temp_file,
             separator="\t",
             has_header=False,
-            new_columns=column_names if column_names \
-                else ["rsid", "chromosome", "position", "genotype"],
+            new_columns=column_names if column_names else ["rsid", "chromosome", "position", "genotype"],
             schema_overrides=schema
         )
 
@@ -135,12 +134,13 @@ def main():
                 output_file = args.out
             else:
                 # Include the percentage in the output filename
-                output_file = os.path.splitext(args.input_file)[0] + \
-                f"_downsampled_{int(args.percentage_to_remove)}pct.txt"
+                base_name = os.path.splitext(args.input_file)[0]
+                pct_value = int(args.percentage_to_remove)
+                output_file = f"{base_name}_downsampled_{pct_value}pct.txt"
 
             # Write header comments from original file plus processing info
-            processing_info = f"This file has been downsampled to \
-                introduce {args.percentage_to_remove}% missingness"
+            processing_info = (f"This file has been downsampled to "
+                              f"introduce {args.percentage_to_remove}% missingness")
             write_with_headers(headers, output_file, processed_df, processing_info)
 
             print(f"Downsampled file written to {output_file}")
@@ -149,10 +149,15 @@ def main():
             downsampled_stats = calculate_stats_dict(processed_df)
 
             # Write log file
-            log_file = os.path.splitext(output_file)[0] + ".log"
-            write_log_file(log_file, command, initial_stats, downsampled_stats,
-                           operation="downsampling",
-                          percentage=args.percentage_to_remove)
+            log_config = LogConfig(
+                log_file_path=os.path.splitext(output_file)[0] + ".log",
+                command=command,
+                initial_stats=initial_stats,
+                processed_stats=downsampled_stats,
+                operation="downsampling",
+                percentage=args.percentage_to_remove
+            )
+            write_log_file(log_config)
 
             # Only show stats here if not already shown above
             if not args.calculate_stats:
@@ -165,8 +170,8 @@ def main():
             downsampling_info = ""
             if args.percentage_to_remove is not None:
                 file_suffix = f"_downsampled_{int(args.percentage_to_remove)}pct"
-                downsampling_info = f" after downsampling to introduce \
-                    {args.percentage_to_remove}% missingness"
+                downsampling_info = (f" after downsampling to introduce "
+                                    f"{args.percentage_to_remove}% missingness")
 
             # Apply pseudo-haploidization
             pseudo_haploid_df = pseudo_haploidize_genotypes(processed_df)
@@ -185,8 +190,8 @@ def main():
                 else:
                     pseudo_output_file = args.out
             else:
-                pseudo_output_file = os.path.splitext(args.input_file)[0] + \
-                    f"{file_suffix}_pseudohaploid.txt"
+                base_name = os.path.splitext(args.input_file)[0]
+                pseudo_output_file = f"{base_name}{file_suffix}_pseudohaploid.txt"
 
             # Write to file with processing info
             processing_info = f"This file has been pseudo-haploidized{downsampling_info}"
@@ -198,9 +203,15 @@ def main():
             pseudo_haploid_stats = calculate_stats_dict(pseudo_haploid_df)
 
             # Write log file
-            log_file = os.path.splitext(pseudo_output_file)[0] + ".log"
-            write_log_file(log_file, command, initial_stats, pseudo_haploid_stats,
-                          operation="pseudo-haploidization", percentage=args.percentage_to_remove)
+            log_config = LogConfig(
+                log_file_path=os.path.splitext(pseudo_output_file)[0] + ".log",
+                command=command,
+                initial_stats=initial_stats,
+                processed_stats=pseudo_haploid_stats,
+                operation="pseudo-haploidization",
+                percentage=args.percentage_to_remove
+            )
+            write_log_file(log_config)
 
             if args.calculate_stats:
                 print("\nPseudo-haploid stats:")
@@ -358,65 +369,80 @@ def calculate_stats_dict(df):
     genotype_col = "genotype" if "genotype" in df.columns else "column_4"
     missing_loci = df.filter(pl.col(genotype_col)=="--").height
 
-    if total_loci > 0:
-        missingness_level = (missing_loci / total_loci) * 100
-        return {
-            "total_loci": total_loci,
-            "missing_loci": missing_loci,
-            "missingness_level": missingness_level
-        }
-    else:
+    if total_loci <= 0:
         return {
             "total_loci": 0,
             "missing_loci": 0,
             "missingness_level": 0
         }
+    
+    missingness_level = (missing_loci / total_loci) * 100
+    return {
+        "total_loci": total_loci,
+        "missing_loci": missing_loci,
+        "missingness_level": missingness_level
+    }
 
-def write_log_file(log_file_path, command, initial_stats,
-                   processed_stats, operation="", percentage=None):
+class LogConfig:
+    """Class to hold log file configuration data."""
+    
+    def __init__(self, log_file_path, command, initial_stats, processed_stats, operation="", percentage=None):
+        """Initialize the log configuration.
+        
+        Parameters:
+        log_file_path -- Path to the log file
+        command -- The command line used to run the script
+        initial_stats -- Dictionary of statistics for the original data
+        processed_stats -- Dictionary of statistics for the processed data
+        operation -- String describing the operation performed
+        percentage -- Percentage value used for downsampling (if applicable)
+        """
+        self.log_file_path = log_file_path
+        self.command = command
+        self.initial_stats = initial_stats
+        self.processed_stats = processed_stats
+        self.operation = operation
+        self.percentage = percentage
+
+def write_log_file(config):
     """
     Write a log file with command used and statistics.
 
     Parameters:
-    log_file_path -- Path to the log file
-    command -- The command line used to run the script
-    initial_stats -- Dictionary of statistics for the original data
-    processed_stats -- Dictionary of statistics for the processed data
-    operation -- String describing the operation performed
-    percentage -- Percentage value used for downsampling (if applicable)
+    config -- LogConfig object containing all necessary data for logging
     """
-    with open(log_file_path, 'w', encoding='utf-8') as f:
+    with open(config.log_file_path, 'w', encoding='utf-8') as f:
         # Write timestamp
         f.write(f"# Log generated on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
 
         # Write command
         f.write("## Command used\n")
-        f.write(f"{command}\n\n")
+        f.write(f"{config.command}\n\n")
 
         # Write operation details
         f.write("## Operation details\n")
-        if operation == "downsampling" and percentage is not None:
-            f.write(f"Downsampled to introduce {percentage}% missingness\n\n")
-        elif operation == "pseudo-haploidization":
-            if percentage is not None:
-                f.write(f"Pseudo-haploidized after downsampling to \
-                        introduce {percentage}% missingness\n\n")
+        if config.operation == "downsampling" and config.percentage is not None:
+            f.write(f"Downsampled to introduce {config.percentage}% missingness\n\n")
+        elif config.operation == "pseudo-haploidization":
+            if config.percentage is not None:
+                f.write(f"Pseudo-haploidized after downsampling to "
+                        f"introduce {config.percentage}% missingness\n\n")
             else:
                 f.write("Pseudo-haploidized\n\n")
 
         # Write initial statistics
         f.write("## Original file statistics\n")
-        f.write(f"Total number of loci: {initial_stats['total_loci']}\n")
-        f.write(f"Number of missing loci: {initial_stats['missing_loci']}\n")
-        f.write(f"Missingness level: {initial_stats['missingness_level']:.2f}%\n\n")
+        f.write(f"Total number of loci: {config.initial_stats['total_loci']}\n")
+        f.write(f"Number of missing loci: {config.initial_stats['missing_loci']}\n")
+        f.write(f"Missingness level: {config.initial_stats['missingness_level']:.2f}%\n\n")
 
         # Write processed statistics
-        f.write(f"## {'Processed' if operation else 'Result'} file statistics\n")
-        f.write(f"Total number of loci: {processed_stats['total_loci']}\n")
-        f.write(f"Number of missing loci: {processed_stats['missing_loci']}\n")
-        f.write(f"Missingness level: {processed_stats['missingness_level']:.2f}%\n")
+        f.write(f"## {'Processed' if config.operation else 'Result'} file statistics\n")
+        f.write(f"Total number of loci: {config.processed_stats['total_loci']}\n")
+        f.write(f"Number of missing loci: {config.processed_stats['missing_loci']}\n")
+        f.write(f"Missingness level: {config.processed_stats['missingness_level']:.2f}%\n")
 
-    print(f"Log file written to {log_file_path}")
+    print(f"Log file written to {config.log_file_path}")
 
 def remove_random_loci(df, percentage_to_remove):
     """Sets genotype to '--' for a random percentage of loci in the DataFrame."""
