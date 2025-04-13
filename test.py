@@ -134,7 +134,7 @@ rs202\t2\t2500\t--
         })
 
         headers = ["# Header line 1\n", "# rsid\tchromosome\tposition\tgenotype\n"]
-        
+
         with tempfile.NamedTemporaryFile(delete=False) as temp_output_file:
             output_file = temp_output_file.name
 

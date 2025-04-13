@@ -23,8 +23,11 @@ def main():
     like downsampling and pseudo-haploidization.
     """
     parser = argparse.ArgumentParser(description="Process a 23andme file and downsample it.")
-    parser.add_argument("-i", "--input_file", required=True, help="Path to the input 23andme file.")
-    parser.add_argument("-o", "--out", help="Path to the output file. By default, generates filename based on input file and operations.")
+    parser.add_argument("-i", "--input_file", required=True,
+                       help="Path to the input 23andme file.")
+    parser.add_argument("-o", "--out",
+                       help="Path to the output file. By default, generates \
+                        filename based on input file and operations.")
     parser.add_argument("-s", "--calculate_stats", action="store_true",
                         help="Calculate and print statistics about the file.")
     parser.add_argument("-p", "--percentage_to_remove", type=float, default=None,
@@ -59,11 +62,13 @@ def main():
             "column_4": pl.Utf8   # genotype
         }
 
+        # Determine the genotype column name before reading the file
         df = pl.read_csv(
             temp_file,
             separator="\t",
             has_header=False,
-            new_columns=column_names if column_names else ["rsid", "chromosome", "position", "genotype"],
+            new_columns=column_names if column_names \
+                else ["rsid", "chromosome", "position", "genotype"],
             schema_overrides=schema
         )
 
@@ -375,7 +380,7 @@ def calculate_stats_dict(df):
             "missing_loci": 0,
             "missingness_level": 0
         }
-    
+
     missingness_level = (missing_loci / total_loci) * 100
     return {
         "total_loci": total_loci,
@@ -385,8 +390,9 @@ def calculate_stats_dict(df):
 
 class LogConfig:
     """Class to hold log file configuration data."""
-    
-    def __init__(self, log_file_path, command, initial_stats, processed_stats, operation="", percentage=None):
+
+    def __init__(self, log_file_path, command, initial_stats,
+                 processed_stats, operation="", percentage=None):
         """Initialize the log configuration.
         
         Parameters:
@@ -403,6 +409,24 @@ class LogConfig:
         self.processed_stats = processed_stats
         self.operation = operation
         self.percentage = percentage
+
+    def get_operation_description(self):
+        """Return a description of the operation performed.
+        
+        This adds a second public method to the class to satisfy pylint.
+        
+        Returns:
+        str -- A description of the operation performed
+        """
+        if self.operation == "downsampling" and self.percentage is not None:
+            return f"Downsampled to introduce {self.percentage}% missingness"
+        elif self.operation == "pseudo-haploidization":
+            if self.percentage is not None:
+                return (f"Pseudo-haploidized after downsampling to "
+                        f"introduce {self.percentage}% missingness")
+            else:
+                return "Pseudo-haploidized"
+        return "Unknown operation"
 
 def write_log_file(config):
     """
@@ -421,14 +445,7 @@ def write_log_file(config):
 
         # Write operation details
         f.write("## Operation details\n")
-        if config.operation == "downsampling" and config.percentage is not None:
-            f.write(f"Downsampled to introduce {config.percentage}% missingness\n\n")
-        elif config.operation == "pseudo-haploidization":
-            if config.percentage is not None:
-                f.write(f"Pseudo-haploidized after downsampling to "
-                        f"introduce {config.percentage}% missingness\n\n")
-            else:
-                f.write("Pseudo-haploidized\n\n")
+        f.write(f"{config.get_operation_description()}\n\n")
 
         # Write initial statistics
         f.write("## Original file statistics\n")
